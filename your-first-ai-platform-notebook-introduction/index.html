@@ -1,0 +1,738 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>AI Platform Notebooks</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="your-first-ai-platform-notebook-introduction"
+                  title="AI Platform Notebooks"
+                  environment="web"
+                  feedback-link="https://github.com/googlecodelabs/your-first-aiplatform/issues">
+    
+      <google-codelab-step label="Introduction" duration="0">
+        <p>In this lab, you&#39;ll get familiar with various features in <a href="https://cloud.google.com/ai-platform/" target="_blank">Google Cloud AI Platform</a>.</p>
+<p><a href="https://cloud.google.com/ai-platform-notebooks/" target="_blank">AI Platform Notebooks</a> provides a managed Jupyter experience so you don&#39;t need to run notebook servers yourself. AI Platform Notebooks is well integrated with other GCP services like Big Query and Google Cloud Storage which makes it quick and simple to start your Data Analytics and ML journey on Google Cloud Platform.</p>
+<aside class="special"><p>Note: This codelab uses HIPAA certified AI Platform Notebooks.</p>
+</aside>
+<h2 is-upgraded><strong>You&#39;ll learn how to</strong></h2>
+<ul>
+<li>Customize, create and launch an AI Platform Notebooks instance in GCP</li>
+<li>Track your notebooks code with git, directly integrated into AI Platform Notebooks</li>
+<li>Reading from and writing to GCS</li>
+<li>Reading BigQuery tables from Notebook (optional)</li>
+<li>Data preparation and feature engineering using Pandas (and Bigquery)</li>
+<li>Running your first model on a notebook</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<p>To complete this lab, you need:</p>
+<ul>
+<li>A project on Google Cloud Platform</li>
+</ul>
+<p>If you don&#39;t have a GCP Project, follow <a href="https://cloud.google.com/resource-manager/docs/creating-managing-projects" target="_blank">these steps</a> to create a new GCP Project.</p>
+<p>This codelab is focused on AI Platform Notebooks. Non-relevant concepts and code blocks are glossed over and are provided for you to simply copy and paste.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Set up your notebook environment" duration="0">
+        <h2 is-upgraded>Step 1<strong>: </strong>Project set up</h2>
+<p>You&#39;ll need a Google Cloud Platform project with billing enabled to run this codelab. To create a project, follow the <a href="https://cloud.google.com/resource-manager/docs/creating-managing-projects" target="_blank">instructions here</a>.</p>
+<h2 is-upgraded>Step 2: Enable APIs</h2>
+<p>(Optional) The BigQuery connector uses the BigQuery Storage API. Search for the BigQuery Storage API in the console and enable the API if it is currently disabled.</p>
+<h2 is-upgraded>Step 3: Enable Cloud Services</h2>
+<p>To enable Cloud Services utilized in the lab environment:</p>
+<p>1. Launch [Cloud Shell](https://cloud.google.com/shell/docs/launching-cloud-shell)</p>
+<p>2. Set your project ID </p>
+<pre><code>PROJECT_ID=[YOUR PROJECT ID]
+
+gcloud config set project $PROJECT_ID</code></pre>
+<p>(If it asks to authorize Cloud shell access, authorize and proceed.)</p>
+<p>3. Use <em>gcloud</em> to enable the services</p>
+<pre><code>gcloud services enable \
+cloudbuild.googleapis.com \
+container.googleapis.com \
+cloudresourcemanager.googleapis.com \
+iam.googleapis.com \
+containerregistry.googleapis.com \
+containeranalysis.googleapis.com \
+ml.googleapis.com \
+dataflow.googleapis.com</code></pre>
+<p>The Cloud Build service account needs the Editor permissions in your GCP project to upload the pipeline package to an AI Platform Pipelines instance.</p>
+<pre><code>PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format=&#34;value(projectNumber)&#34;)
+CLOUD_BUILD_SERVICE_ACCOUNT=&#34;${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com&#34;
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member serviceAccount:$CLOUD_BUILD_SERVICE_ACCOUNT \
+  --role roles/editor</code></pre>
+<h2 is-upgraded><strong>Step 4: Create an AI Platform Notebooks instance</strong></h2>
+<p>Navigate to <a href="https://console.cloud.google.com/mlengine/notebooks/instances" target="_blank">AI Platform Notebooks section</a> of your Cloud Console and click New Instance. Then select the latest TensorFlow Enterprise 2.x instance type without GPUs:</p>
+<p class="image-container"><img style="width: 624.00px" src="img/9f2bb4dec1ba4f4f.png"></p>
+<p>Give your instance a name or use the default. Then we&#39;ll explore the customization options. Click the <strong>Customize</strong> button:</p>
+<p class="image-container"><img style="width: 368.50px" src="img/63be602ba45ca7c9.png"></p>
+<p class="image-container"><img style="width: 432.51px" src="img/14d336267c74f3e4.png"></p>
+<p>AI Platform Notebooks has many different customization options, including: the region your instance is deployed in, the image type, machine size, number of GPUs, and more. We&#39;ll use the defaults for region and environment. For <strong>machine configuration</strong>, we&#39;ll use an n1-standard-8 machine:</p>
+<p class="image-container"><img style="width: 428.50px" src="img/27101d232f765a17.png"></p>
+<p>For the purpose of this lab, we do not need to  add any GPUs, and we&#39;ll use the defaults for boot disk, networking, and permission. Select <strong>Create</strong> to create your instance. This will take a few minutes to complete.</p>
+<p>Once the instance has been created you&#39;ll see a green checkmark next to it in the Notebooks UI. Select <strong>Open JupyterLab </strong>to open your instance and start prototyping:</p>
+<p class="image-container"><img style="width: 624.00px" src="img/3598f414887ea9a8.png"></p>
+<p>When you open the instance, create a new directory called codelab. This is the directory we&#39;ll be working from throughout this lab:</p>
+<p class="image-container"><img style="width: 480.00px" src="img/c16a821546acd92.png"></p>
+<p>Click into your newly created codelab directory by double-clicking on it and then select Python 3 notebook from the launcher:</p>
+<p class="image-container"><img style="width: 532.50px" src="img/4390b1614ae8eae4.png"></p>
+<p>Rename the notebook to demo.ipynb, or whatever name you&#39;d like to give it.</p>
+<h2 is-upgraded><strong>Step 5: Install dependencies</strong></h2>
+<p>After you create a notebook instance, you might need to install software that your notebook depends on. You can install dependencies using a <strong>terminal window</strong>, or by adding install commands in a <strong>file in your notebook</strong>.</p>
+<pre><code>!pip install plotly==4.9.0</code></pre>
+<p>Restart the kernel to use updated packages.</p>
+<p>(Optional for Bigquery Magic)</p>
+<pre><code>!pip install --upgrade google-cloud-bigquery
+!pip install --upgrade google-cloud-bigquery[bqstorage,pandas]
+</code></pre>
+<p>Restart the kernel to use updated packages.</p>
+<h2 is-upgraded><strong>Step 6: Import Python packages</strong></h2>
+<p>Create a new cell in the notebook and import the libraries we&#39;ll be using in this codelab:</p>
+<pre><code>import pandas as pd
+
+import numpy as np
+import json
+
+import pickle
+import os 
+import time
+
+from googleapiclient import discovery
+from googleapiclient import errors
+
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import SGDClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+
+
+from google.cloud import bigquery
+</code></pre>
+<h2 is-upgraded><strong>Step 7: Create a GCS bucket and upload your data into GCS</strong></h2>
+<p>We will create a multi-regional bucket for this lab. You can upload data files into the bucket and explore the data through the notebook in further steps. </p>
+<p>Create a bucket with a globally unique name and containing non-sensitive information. </p>
+<ul>
+<li>Navigate to <a href="https://pantheon.corp.google.com/storage/browser?project=etl-project-datahub&prefix=" target="_blank">Google Cloud Storage UI </a>and click Create Bucket.</li>
+<li>Pick a globally unique, permanent name. Tip: Don&#39;t include any sensitive information.</li>
+</ul>
+<p><a href="https://cloud.google.com/storage/docs/naming?_ga=2.260215109.-939983374.1598558631" target="_blank">Naming guidelines</a>. E.g. workshop_artifact_store_&lt;your_unique_id&gt;</p>
+<ul>
+<li>Create a folder &#34;input_data&#34;</li>
+<li>Click and browse to upload your data file &#34;Anonymized_Fermentation_Data_final.xlsx&#34; into the folder.</li>
+</ul>
+<p><strong>Input data description:</strong></p>
+<p>This data is derived from measurements during a fermentation process and includes a variety of physiological, biochemical and process parameters. While the full fermentation process might take up to 10 days and we collect real time measurements every few minutes the presented data has been summarized across our commonly used time intervals for assessment of strain performance `Absolute_Interval`. </p>
+<h2 is-upgraded><strong>Step 8: Environment Settings</strong></h2>
+<p>As best practices, set location paths, connections strings, and other environment settings. Make sure to update REGION, and ARTIFACT_STORE with the settings reflecting your lab environment.</p>
+<ul>
+<li>REGION - the compute region for AI Platform Training and Prediction</li>
+<li>ARTIFACT_STORE - the GCS bucket.</li>
+</ul>
+<pre><code>REGION = &#39;us-central1&#39;
+ARTIFACT_STORE = &#39;&lt;YOUR_GCS_BUCKET(starting with gs://&gt;&#39;
+
+PROJECT_ID = !(gcloud config get-value core/project)
+PROJECT_ID = PROJECT_ID[0]
+DATA_ROOT=&#39;{}/data&#39;.format(ARTIFACT_STORE)
+INPUT_FILE = &#39;{}/data/&lt;data filename&gt;&#39;.format(ARTIFACT_STORE)
+JOB_DIR_ROOT=&#39;{}/jobs&#39;.format(ARTIFACT_STORE)
+TRAINING_FILE_PATH=&#39;{}/{}/{}&#39;.format(DATA_ROOT, &#39;training&#39;, &#39;X_train.csv&#39;)
+VALIDATION_FILE_PATH=&#39;{}/{}/{}&#39;.format(DATA_ROOT, &#39;validation&#39;, &#39;X_validate.csv&#39;)</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Connect GCS data to your notebook and process data" duration="0">
+        <h2 is-upgraded>Step 1: Read data from GCS bucket into a Pandas DataFrame</h2>
+<p>Next we&#39;ll read the data from your GCS bucket into a Pandas DataFrame to see what we&#39;ll be working with. It&#39;s important to shuffle our data in case the original dataset is ordered in a specific way.:</p>
+<pre><code>data = pd.read_csv(&lt;YOUR_DATA_LOCATION_IN_GCS&gt;&#39;data = shuffle(data, random_state=4)
+
+data.head()</code></pre>
+<pre><code>obj = INPUT_FILE
+data = pd.read_excel(obj,sheet_name=&#39;data&#39;) 
+meta_data = pd.read_excel(obj,sheet_name=&#39;meta data&#39;)
+
+data.head()</code></pre>
+<p>data.head() lets us preview the first five rows of our dataset in Pandas. You should see something like this after running the cell above:</p>
+<p class="image-container"><img style="width: 624.00px" src="img/bc0a013fc9453fe0.png"></p>
+<p>The variables are described in the <strong>meta_data</strong> and are composed of a variety of fermentation processes (<strong>meta data</strong>), physiological and biochemical parameters (<strong>independent</strong>).</p>
+<p>Predictive modeling targets are denoted in <strong>meta_data.query(target == 1)</strong> and include:</p>
+<ul>
+<li><strong>Run_Execution:</strong> was the fermentation process executed as planned (yes/no == alpha/beta)? </li>
+<li><strong>Run_Performance:</strong> was the strain viable during the fermentation process (yes/no == gamma/delta)?</li>
+<li><strong>Product_Produced__g:</strong> how much product molecule was produced (grams)</li>
+<li><strong>Titer_End__g_over_kg:</strong> how much product was produced relative input feedstock (grams/kilo grams)</li>
+</ul>
+<p>We will select the Run_Performance  column as  the thing our model will predict. </p>
+<pre><code>meta_data.head()</code></pre>
+<p class="image-container"><img style="width: 509.33px" src="img/95a5d80fdbd98df7.png"></p>
+<pre><code>print(&#39;The data contains {} samples and {} variables&#39;.format(data.shape[0],data.shape[1]))
+print(&#39;There are {} unique strains which are replicated or measured under different fermentation conditions.&#39;.format(data[&#39;Strain&#39;].nunique()))
+print(&#39;The variables are comprised of a variety of fermentation process, physiological and biochemical parameters:&#39;)
+display(meta_data[&#39;variable type&#39;].value_counts())
+print(&#39;Predictive modeling targets include: {}&#39;.format(meta_data.query(&#39;target == 1&#39;).name.values))
+display(data[[&#39;Run_Execution&#39;, &#39;Run_Performance&#39;]].apply(lambda x: x.value_counts()))
+</code></pre>
+<p>Since the &#34;<code>Run_Performance&#34;</code> in this dataset can be &#34;delta&#34; or &#34;gamma&#34;, we&#39;ll build a classification model. That means our model will predict a value to assign the input data to a particular class.</p>
+<h2 is-upgraded>Step 3: Splitting data into train, validate and test sets</h2>
+<p>An important concept in machine learning is train / test split. We&#39;ll take the majority of our data and use it to train our model, and we&#39;ll set aside the rest for testing our model on data it&#39;s never seen before.</p>
+<p>Add the following code to your notebook, which drops the label column from our dataset, and splits our data and labels into training and test sets:</p>
+<pre><code>#Prepare data for analysis
+#Split out numeric from categorical variables
+
+##var_type_filter = [x in [&#39;physiological&#39;,&#39;biochemical&#39;,&#39;process&#39;] for x in meta_data[&#39;variable type&#39;]]
+var_type_filter = [x in [&#39;independent&#39;] for x in meta_data[&#39;variable type&#39;]]
+var_dtype_filter = (data.dtypes == &#39;float64&#39;) | (data.dtypes == &#39;int64&#39;)
+
+numeric_vars = (var_type_filter &amp; var_dtype_filter).values
+numeric_x_data = data[data.columns[numeric_vars]]
+
+#things to try to predict
+y_data = data[data.columns[(meta_data[&#39;target&#39;] == 1).values]]
+
+#meta data about variables
+meta_data = meta_data.query(&#39;name in {}&#39;.format(list(data.columns[numeric_vars].values))).set_index(&#39;name&#39;)
+
+</code></pre>
+<p>Split the input data into stratified sets of train, validate and test data.</p>
+<pre><code>from sklearn.model_selection import train_test_split
+
+model_target = &#39;Run_Performance&#39; 
+
+#maintain class balance
+X_train, X_test, y_train, y_test = train_test_split(numeric_x_data, y_data, test_size=0.25, stratify = y_data[model_target], random_state=42)
+
+#split train set to create a pseudo test or validation dataset
+X_train, X_validate, y_train, y_validate = train_test_split(X_train, y_train, test_size=0.33, stratify= y_train[model_target], random_state=42)</code></pre>
+<p>Check the target labels</p>
+<pre><code>y_test.head()</code></pre>
+<pre><code></code></pre>
+<h2 is-upgraded>Step 4: Clean up data for exploratory analysis </h2>
+<p>To build a good model, it is important to manage and correct missing input data with an appropriate clean up strategy. In this dataset we impute missing numeric data with median.</p>
+<pre><code>#simple sklearn impute and scale numeric pipeline
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+
+#impute missing with median
+imputer = SimpleImputer(missing_values=np.nan, strategy=&#39;median&#39;)
+
+#auto scale
+scaler = StandardScaler()
+
+pipe = Pipeline([(&#39;imputer&#39;,imputer),(&#39;scaler&#39;, scaler)])
+
+
+X_train_scaled = pipe.fit_transform(X_train)
+</code></pre>
+<p>Now you&#39;re ready to build and train your first model!</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="(Optional): Multivariate overview of the training data" duration="0">
+        <pre><code>from sklearn.decomposition import PCA
+
+
+pca = PCA(n_components=3)
+pca_result = pca.fit_transform(X_train_scaled)
+
+#collect results
+def get_results(res,prefix=&#39;&#39;,ncol=3, add=None):
+    
+    out= pd.DataFrame()
+    for i in range(ncol):
+        key = prefix + str(i+1)
+        value = res[:,i]
+        out.loc[:,key] = value
+    
+    if add is not None:
+        out = pd.concat([out,add],axis=1)
+    
+    return out
+
+df = get_results(pca_result,&#39;pca-&#39;, add = y_train.reset_index())
+
+
+print(&#39;Explained % variation per principal component: {}&#39;.format( (pca.explained_variance_ratio_ *100).round(2)))
+
+df.head()
+# sample scores
+import plotly.graph_objects as go
+
+#data for hover
+tmp = df
+customdata = np.stack(([tmp[x] for x in tmp]), axis = -1)
+#hover text as  html
+res = []
+for i,name in enumerate(tmp.columns):
+    res.append(&#39;&lt;b&gt;{}&lt;/b&gt;: %&#123;&#123;customdata[{}]}}&lt;br&gt;&#39;.format(name,i))
+    
+hovertemplate = &#39;&#39;.join(res)
+
+#select variables to show
+prefix = &#39;pca&#39;
+vars = []
+for cols in df.columns:
+    
+    if cols.find(prefix) !=-1:
+        vars.append(dict(label=cols,values=df[cols]))
+
+</code></pre>
+<pre><code>#define custom colors
+import plotly.express as px
+
+color_var = model_target
+
+colors =  px.colors.qualitative.Plotly[0:df[color_var].nunique()] # change palette if not discreet
+
+opt_color = []
+_color_var = pd.factorize(tmp[color_var])
+
+for i in _color_var[0]:
+    opt_color.append(colors[i])   
+
+fig = go.Figure(data=go.Splom(dimensions=vars,
+                              marker=dict(color=opt_color,opacity=.5),
+                              showupperhalf=False,
+                              hovertemplate = hovertemplate,
+                              customdata  = customdata
+                             )
+               )
+
+
+fig.update_layout(
+    title=&#39;PCA scores&#39;,
+    width=800,
+    height=800,
+)
+
+fig.show()
+
+
+</code></pre>
+<pre><code># variable loadings
+pca_loadings = pd.DataFrame()
+df =  pca_loadings
+loadings=pca.components_.T * np.sqrt(pca.explained_variance_)
+
+extra = (pd.DataFrame({&#39;name&#39;: X_train.columns.tolist()})
+         .set_index(&#39;name&#39;)
+         .join(meta_data)
+         .reset_index()
+        )
+        
+
+
+
+pca_loadings = get_results(loadings,&#39;pca-&#39;,add = extra)
+pca_loadings.head()
+
+
+</code></pre>
+<pre><code>#select variables to show
+df = pca_loadings
+
+vars = []
+for cols in df.columns:
+    
+    if cols.find(&#39;pca&#39;) !=-1:
+        vars.append(dict(label=cols,values=df[cols]))
+        
+
+
+fig = go.Figure(data=go.Splom(dimensions=vars,
+                              showupperhalf=False,
+                              hovertemplate = &#39;variable:%{text}&#39;,
+                              text=df[&#39;name&#39;],
+                             )
+               )
+
+
+fig.update_layout(
+    title=&#39;PCA loadings&#39;,
+    width=800,
+    height=800,
+)
+
+fig.show()
+
+
+</code></pre>
+<pre><code>### plot top loadings variables raw data
+import plotly.express as px
+import math
+
+df = pca_loadings
+
+_df = pd.concat([y_train,X_train],axis=1)
+
+_df = _df.melt(id_vars=[model_target])
+
+_df = _df.query(&#39;variable in {}&#39;.format(top_vars))
+
+
+</code></pre>
+<pre><code>### plot top loadings variables raw data
+import plotly.express as px
+import math
+
+df = pca_loadings
+
+_df = pd.concat([y_train[model_target],X_train],axis=1)
+
+_df = _df.melt(id_vars=[model_target])
+
+_df[&#39;value&#39;] = _df[&#39;value&#39;].clip(lower=0)
+                   
+_df = _df.query(&#39;variable in {}&#39;.format(top_vars)).dropna()
+
+_df[&#39;shifted_log_value&#39;] = [math.log(x+1) for x in _df[&#39;value&#39;]]
+
+
+fig = px.violin(_df, y=&#34;shifted_log_value&#34;, x=&#34;variable&#34;, 
+                color=color_var, box=True, points=&#34;all&#34;,
+                hover_data=_df.columns,
+                color_discrete_map={&#39;delta&#39;: colors[0] ,&#39;gamma&#39;:colors[1]})
+
+# fig.update_layout( yaxis_type=&#34;log&#34;)
+fig.show()
+
+
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="(Optional): Connect BigQuery data to your notebook" duration="0">
+        <p>BigQuery, Google Cloud&#39;s big data warehouse, has made <a href="https://cloud.google.com/bigquery/public-data" target="_blank">many datasets</a> publicly available for your exploration. AI Platform Notebooks support direct integration with BigQuery without requiring authentication.</p>
+<h2 is-upgraded>Step 0: Load your dataset from GCS to BigQuery</h2>
+<pre><code>model_target = &#39;Run_Performance&#39;
+data_load = numeric_x_data.join(y_data[model_target])
+input_file_csv = &#39;&lt;desired name for csv data file&gt;&#39;
+DATA_ROOT=&#39;{}/data&#39;.format(ARTIFACT_STORE) 
+
+cmd = &#34;data_load.to_csv(&#39;{}/{}.csv&#39;, index=False)&#34;.format(DATA_ROOT, input_file_csv)
+eval(cmd)
+print(&#34;Saved input data file as csv for BQ load.&#34;)
+</code></pre>
+<pre><code>PROJECT_ID = !(gcloud config get-value core/project)
+PROJECT_ID = PROJECT_ID[0]
+DATASET_LOCATION=&#39;US&#39;
+DATASET_ID=&lt;desired name of dataset&gt; # e.g.&#39;workshop&#39; 
+TABLE_ID=&lt;desired name of table&gt; # e.g. &#39;fermentation_data&#39;
+DATA_SOURCE=&lt;gcs location of the csv data file previous step&gt;
+# e.g. &#39;gs://workshop_artifact_id/data/fermentation_data.csv&#39;
+
+
+!bq --location=$DATASET_LOCATION --project_id=$PROJECT_ID mk --dataset $DATASET_ID
+
+!bq --project_id=$PROJECT_ID --dataset_id=$DATASET_ID load \
+--autodetect \
+--source_format=CSV \
+--skip_leading_rows=1 \
+--replace \
+$TABLE_ID \
+$DATA_SOURCE </code></pre>
+<h2 is-upgraded>Step 1: Download BigQuery data to our notebook</h2>
+<p>We&#39;ll be using the Python client library for BigQuery to download the data into a Pandas DataFrame. </p>
+<pre><code>%%bigquery
+SELECT *
+FROM `&lt;dataset_name&gt;.&lt;table_name&gt;`
+</code></pre>
+<p>Create a training split. </p>
+<pre><code>!bq query \
+-n 0 \
+--destination_table &lt;dataset_name&gt;.&lt;table_name&gt; \
+--replace \
+--use_legacy_sql=false \
+&#39;SELECT * \
+FROM `&lt;dataset_name&gt;.&lt;table_name&gt;` AS f_data \
+WHERE \
+MOD(ABS(FARM_FINGERPRINT(TO_JSON_STRING(f_data))), 10) IN (1, 2, 3, 4)&#39;</code></pre>
+<p>Save this training split. </p>
+<pre><code>!bq extract \
+--destination_format CSV \
+&lt;dataset_name&gt;.&lt;table_name&gt; \
+$TRAINING_FILE_PATH</code></pre>
+<p>Create a validation split. </p>
+<pre><code>!bq query \
+-n 0 \
+--destination_table &lt;dataset_name&gt;.&lt;table_name&gt; \
+--replace \
+--use_legacy_sql=false \
+&#39;SELECT * \
+FROM `&lt;dataset_name&gt;.&lt;table_name&gt;` AS f_data \
+WHERE \
+MOD(ABS(FARM_FINGERPRINT(TO_JSON_STRING(f_data))), 10) IN (8)&#39;</code></pre>
+<p>Save the validation split. </p>
+<pre><code>!bq extract \
+--destination_format CSV \
+&lt;dataset_name&gt;.&lt;table_name&gt; \
+$VALIDATION_FILE_PATH</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="(Optional): Data Preparation and feature Engineering using csv" duration="0">
+        <h2 is-upgraded>Step 1: Read into a pandas dataframe in the notebook. </h2>
+<pre><code>df_train = pd.read_csv(TRAINING_FILE_PATH)
+df_validation = pd.read_csv(VALIDATION_FILE_PATH)
+print(df_train.shape)
+print(df_validation.shape)</code></pre>
+<h2 is-upgraded>Step 2: Feature engineering</h2>
+<pre><code>numeric_feature_indexes = slice(0, 61)
+categorical_feature_indexes = slice(61, 62)
+num_features_type_map = {feature: &#39;float64&#39; for feature in df_train.columns[numeric_feature_indexes]}
+categorical_features_map = {feature:&#39;object&#39;for feature in df_train.columns[categorical_feature_indexes]}
+
+df_train = df_train.astype(num_features_type_map)
+df_validation = df_validation.astype(num_features_type_map)
+df_train_y = df_train.astype(categorical_features_map)
+df_validation_y = df_validation.astype(categorical_features_map)
+
+X_train = df_train.drop(model_target, axis=1)
+y_train = df_train_y
+X_validate = df_validation.drop(model_target, axis=1)
+y_validate = df_validation_y</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Creating and running your first model locally in notebook" duration="0">
+        <h2 is-upgraded>Step 1: Configure the sklearn training pipeline.</h2>
+<pre><code>pipe = Pipeline([(&#39;imputer&#39;,imputer),(&#39;scaler&#39;, scaler)])
+
+X_train_scaled = pipe.fit_transform(X_train)</code></pre>
+<h2 is-upgraded>Step 2: Run the pipeline locally</h2>
+<pre><code>#prepare data for modeling
+#use the pipeline created above
+_X_train = pipe.fit_transform(X_train)
+_y_train = y_train[model_target]    ## selected target label for prediction
+_X_test = pipe.fit_transform(X_validate)
+_y_test = y_validate[model_target]</code></pre>
+<pre><code>from sklearn.ensemble import RandomForestClassifier
+from sklearn.utils.class_weight import compute_class_weight
+from sklearn.model_selection import RandomizedSearchCV
+
+
+# Simple hyperparameter tuning for random forest model
+estimator = RandomForestClassifier(random_state = 42)
+
+# tune grid
+param_grid = {
+    &#39;n_estimators&#39;: np.linspace(10, 200).astype(int),
+    &#39;max_depth&#39;: [None] + list(np.linspace(3, 20).astype(int)),
+    &#39;max_features&#39;: [&#39;auto&#39;, &#39;sqrt&#39;, None] + list(np.arange(0.5, 1, 0.1)),
+    &#39;max_leaf_nodes&#39;: [None] + list(np.linspace(10, 50, 500).astype(int)),
+    &#39;min_samples_split&#39;: [1, 2, 5, 10],
+    &#39;bootstrap&#39;: [True, False],
+    &#39;class_weight&#39; : [&#34;balanced&#34;, &#34;balanced_subsample&#34;] # RF classifier tends to be biased towards the majority class, place a heavier penalty on misclassifying the minority class
+}
+
+print(&#39;class weights (1,0): {}&#39;.format(compute_class_weight(&#39;balanced&#39;, np.unique(_y_train), _y_train)) )
+
+
+
+# Create the random search model
+rs = RandomizedSearchCV(estimator, param_grid, n_jobs = -1, 
+                        scoring = &#39;roc_auc&#39;, cv = 3, 
+                        n_iter = 10, verbose = 1, random_state=42)
+
+# Fit 
+rs.fit(_X_train, _y_train)
+
+
+#select best model
+best_model = rs.best_estimator_
+
+train_rf_predictions = best_model.predict(_X_train)
+train_rf_probs = best_model.predict_proba(_X_train)[:, 1]
+
+rf_predictions = best_model.predict(_X_test)
+rf_probs = best_model.predict_proba(_X_test)[:, 1]
+</code></pre>
+<h2 is-upgraded>Step 3: Calculate the trained model&#39;s accuracy.</h2>
+<pre><code>#evaluate performance on validation data
+import matplotlib.pyplot as plt
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import plot_confusion_matrix
+
+print(&#39;Accuracy of classifier on validation set: {:.2f}&#39;.format(best_model.score(_X_test, _y_test).round(2)))
+print(classification_report(_y_test, rf_predictions))
+plot_confusion_matrix(best_model, _X_test, _y_test,
+#                                  display_labels=[&#39;no&#39;,&#39;yes&#39;],
+                                 cmap=plt.cm.Blues)
+
+
+</code></pre>
+<pre><code>#evaluate performance on test data
+_X_test2 = pipe.fit_transform(X_test)
+_y_test2 = y_test[model_target]
+
+rf_predictions = best_model.predict(_X_test)
+rf_probs = best_model.predict_proba(_X_test)[:, 1]
+
+print(&#39;Accuracy of classifier on test set: {:.2f}&#39;.format(best_model.score(_X_test, _y_test).round(2)))
+print(classification_report(_y_test, rf_predictions))
+plot_confusion_matrix(best_model, _X_test, _y_test,
+#                                  display_labels=[&#39;no&#39;,&#39;yes&#39;],
+                                 cmap=plt.cm.Blues)
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Integrating with git repos" duration="0">
+        <p>AI Platform Notebooks has a direct integration with git, so that you can do version control directly within your notebook environment. This supports committing code right in the notebook UI, or via the Terminal available in JupyterLab. In this section we&#39;ll initialize a git repository in our notebook and make our first commit via the UI.</p>
+<h2 is-upgraded>Step 1: Initialize a git repository</h2>
+<p>From your codelab directory, select Git and then Init from the top menu bar in JupyterLab:</p>
+<p class="image-container"><img style="width: 323.50px" src="img/d9f1729358f18e58.png"></p>
+<p>When it asks if you want to make this directory a Git Repo, select Yes. Then select the Git icon on the left sidebar to see the status of your files and commits:</p>
+<p class="image-container"><img style="width: 38.03px" src="img/1648d6828f11a6db.png"></p>
+<h2 is-upgraded>Step 2: Make your first commit</h2>
+<p>In this UI, you can add files to a commit, see file diffs (we&#39;ll get to that later), and commit your changes. Let&#39;s start by committing the notebook file we just added.</p>
+<p>Check the box next to your demo.ipynb notebook file to stage it for the commit (you can ignore the .ipynb_checkpoints/ directory). Enter a commit message in the text box and then click on the check mark to commit your changes:</p>
+<p class="image-container"><img style="width: 361.70px" src="img/fe7366522a3a268f.png"></p>
+<p>Enter your name and email when prompted. Then go back to the History tab to see your first commit:</p>
+<p class="image-container"><img style="width: 277.28px" src="img/d03567c3592afb77.png"></p>
+<p><em>Note that the screenshots might not match your UI exactly, due to updates since this lab was published.</em></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Build and Train sklearn ML model on your notebook locally" duration="0">
+        <p>We&#39;ll build a Scikit Learn model in this section. Since we&#39;ve already processed and split our data, this step will be pretty fast.</p>
+<h2 is-upgraded>Step 1: Create a Storage Bucket for your model</h2>
+<p>First, define some new environment variables for your Scikit Learn model. Be sure to replace your_sklearn_bucket with a unique bucket name:</p>
+<pre><code>git remote add origin git@github.com:username/&lt;your-repo&gt;.git</code></pre>
+<p>Then create that bucket using gsutil:</p>
+<pre><code>PROJECT_ID = !(gcloud config get-value core/project)
+PROJECT_ID = PROJECT_ID[0]
+STORAGE_CLASS=&#39;STANDARD&#39;
+BUCKET_LOCATION=&#39;US&#39;
+SKLEARN_MODEL_BUCKET=&#39;&lt;Your Model bucket starting with gs://bkt&gt;&#39;
+
+!gsutil mb -p $PROJECT_ID -c $STORAGE_CLASS -l $BUCKET_LOCATION -b on $SKLEARN_MODEL_BUCKET
+</code></pre>
+<h2 is-upgraded>Step 2: Train and export the model</h2>
+<p>You can export a Scikit Learn model that is trained locally to AI Platform for prediction.</p>
+<pre><code>scikit_model = best_model</code></pre>
+<p>(Optional: For numeric targets, you can train a Scikitlearn regression model in code, using the built-in LinearRegression model which we imported at the beginning of the notebook:</p>
+<pre><code>scikit_model = LinearRegression().fit(
+  train_data.values, 
+  train_labels.values
+)</code></pre>
+<p>(Optional: When the model is trained, export it to a local file using pickle:)</p>
+<pre><code>pickle.dump(scikit_model, open(&#39;model.pkl&#39;, &#39;wb&#39;))</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Deploy Scikit Learn model to Cloud AI Platform" duration="0">
+        <h2 is-upgraded>Step 1: Copy your model to Cloud Storage</h2>
+<p>Copy the model artifact you just exported to your Storage Bucket. When you create subsequent versions of your model, organize them by placing each one into its own separate directory within your Cloud Storage bucket.</p>
+<pre><code>!gsutil cp ./model.pkl $SKLEARN_MODEL_BUCKET/model.pkl</code></pre>
+<h2 is-upgraded>Step 2: Create and deploy the model</h2>
+<p>AI Platform Prediction organizes your trained models using <em>model</em> and <em>version</em> resources. An AI Platform Prediction model is a container for the versions of your machine learning model.  To deploy a model, you create a model resource in AI Platform Prediction, create a version of that model, then link the model version to the model file stored in Cloud Storage. Create your model using gcloud. We&#39;ll call this one sklearn_fermentation:</p>
+<pre><code>REGION = &#39;us-central1&#39;
+model_name = &#39;sklearn_fermentation&#39;
+labels = &#34;task=classifier,domain=biotech&#34;
+!gcloud ai-platform models create  $model_name \
+    --regions=$REGION \
+    --labels=$labels
+</code></pre>
+<p>Then deploy the model:</p>
+<pre><code>SKLEARN_VERSION_NAME=&#39;v01&#39;
+
+!gcloud beta ai-platform versions create $SKLEARN_VERSION_NAME --model=$model_name \
+--origin=$SKLEARN_MODEL_BUCKET \
+--runtime-version=1.15 \
+--python-version=3.7 \
+--framework=scikit-learn
+
+
+</code></pre>
+<h2 is-upgraded>Step 3: Test the deployed model</h2>
+<p>Finally, make sure your new Scikit Learn model is working correctly by passing it the same test JSON file as above:</p>
+<pre><code>!gcloud ai-platform predict --model=sklearn_fermentation --json-instances=predictions.json --version=$SKLEARN_VERSION_NAME
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Optional: connect your local git repo to GitHub" duration="0">
+        <p>Finally, we&#39;ll learn how to connect the git repo in our notebook instance to a repo in our GitHub account. If you&#39;d like to do this step, you&#39;ll need a <a href="https://github.com/" target="_blank">GitHub</a> account.</p>
+<h2 is-upgraded>Step 1: Create a new repo on GitHub</h2>
+<p>In your GitHub account, create a new repository. Give it a name and a description, decide if you&#39;d like it to be public, and select Create repository (you don&#39;t need to initialize with a README). On the next page, you&#39;ll follow the instructions for pushing an existing repository from the command line.</p>
+<p>Open a Terminal window, and add your new repository as a remote. Replace username in the repo URL below with your GitHub username, and your-repo with the name of the one you just created:</p>
+<p>git remote add origin git@github.com:username/&lt;your-repo&gt;.git</p>
+<h2 is-upgraded>Step 2: Authenticate to GitHub in your notebooks instance</h2>
+<p>Next you&#39;ll need to authenticate to GitHub from within your notebook instance. This process varies depending on whether you have two-factor authentication enabled on GitHub.</p>
+<p>If you&#39;re not sure where to start, follow the steps in the GitHub documentation to <a href="https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent" target="_blank">create an SSH key</a> and then <a href="https://help.github.com/en/github/authenticating-to-github/adding-a-new-ssh-key-to-your-github-account" target="_blank">add the new key to GitHub</a>.</p>
+<h2 is-upgraded>Step 3: Ensure you&#39;ve correctly linked your GitHub repo</h2>
+<p>To make sure you&#39;ve set things up correctly, run git remote -v in your terminal. You should see your new repository listed as a remote. Once you see the URL of your GitHub repo and you&#39;ve authenticated to GitHub from your notebook, you&#39;re ready to push directly to GitHub from your notebook instance.</p>
+<p>To sync your local notebook git repo with your newly created GitHub repo, click the cloud upload button at the top of the Git sidebar:</p>
+<p class="image-container"><img style="width: 376.50px" src="img/eec001587bb9cfb1.png"></p>
+<p>Refresh your GitHub repository, and you should see your notebook code with your previous commits! If others have access to your GitHub repo and you&#39;d like to pull down the latest changes to your notebook, click the cloud download icon to sync those changes.</p>
+<p>On the History tab of the Notebooks git UI, you can see if your local commits are synced with GitHub. In this example, origin/master corresponds with our repo on GitHub:</p>
+<p class="image-container"><img style="width: 406.50px" src="img/2c3d1eb7cf95c24e.png"></p>
+<p>Whenever you make new commits, just click the cloud upload button again to push those changes to your GitHub repo.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Optional: Clean Up!" duration="0">
+        <p>In the AI Platform Notebooks page on the GCP console, select the notebook instance and click <strong>DELETE</strong>.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Congrats!" duration="0">
+        <p>You&#39;ve done a lot in this lab 👏👏👏</p>
+<p>To recap, you&#39;ve learned how to:</p>
+<ul>
+<li>Customize  and c an AI Platform Notebook instance</li>
+<li>Initialize a local git repo in that instance, add commits via the git UI or command line, view git diffs in the Notebook git UI</li>
+<li>Connect your Notebook git repo to an external repository on GitHub</li>
+<li>Read data from GCS into AI Platform Instance. </li>
+<li>Create and run the ml model locally in this instance. </li>
+</ul>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2020-09-09T21:03:24Z",
+  "id": "your-first-ai-platform-notebook-introduction",
+  "duration": 0,
+  "title": "AI Platform Notebooks",
+  "authors": "prajp, benazirfateh",
+  "summary": "In this codelab, you'll learn about AI Platform Notebooks. In a step by step process,you will be able to spin up an AI Platform Notebook Instance, integrate with github repo and  read from and write to GCS. You will then learn how to preprocess your data and create and run a machine learning model locally.",
+  "source": "1-LIz8q1G4E8sPE3rYmJ2LJr1fQfBCh9YIoqSqtVsL28",
+  "theme": "cloud",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "Cloud"
+  ],
+  "tags": [
+    "data"
+  ],
+  "feedback": "https://github.com/googlecodelabs/your-first-aiplatform/issues",
+  "url": "your-first-ai-platform-notebook-introduction"
+}
